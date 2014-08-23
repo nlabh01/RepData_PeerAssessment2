@@ -1,0 +1,140 @@
+# Reproducible Research: Peer Assessment 2
+by: <i><b>Nirmal Labh</b> [August 22, 2014]</i>
+
+## Influence of Severe Weather Events on Public Health and US Economy 
+
+### Synonpsis  
+In this report, we analyze data related to severe weather and attempt to determine the events that adversly impact public health and US economy. 
+
+The storm data we will be using for this analysis is originally available at the U.S. National Oceanic and Atmospheric Administration's (NOAA). We will make use of the data provided as part of the course project.
+
+
+
+
+
+### Data Processing
+We start off by downloading the data file. 
+We skip re-downloading if the data file is already present in the working directory:
+
+```{r}
+echo = TRUE  # Make R code visible
+```
+
+```{r}
+setwd("C:/Users/Nirmal/RR/RepData_PeerAssessment2")
+fileURL="http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+downloadFile="stormData.csv.bz2"
+
+# download the file only if not already found
+if(!file.exists(downloadFile)){
+     download.file(fileURL,downloadFile)
+}
+
+```
+Next, we read the compressed csv file only if it has not been read in earlier runs. The way we check if data was read earlier is by checking the environment for the variable into which we read the data.
+```{r}
+if (!"stormData" %in% ls()) {
+    stormData <- read.csv(downloadFile, sep = ",")
+}
+```
+There are `r dim(stormData)[1]` rows and `r dim(stormData)[2]` columns in total.
+
+Examining a sample of data in 2 rows: 
+```{r} 
+head(stormData, 2)
+#
+# derive the year as numeric for summarizing by years
+if (dim(stormData)[2] == 37) {
+    stormData$year <- as.numeric(format(as.Date(stormData$BGN_DATE, format = "%m/%d/%Y %H:%M:%S"), "%Y"))
+}
+```
+
+The data starts from year `r min(stormData$year)` through `r max(stormData$year)`. As stated that in the earlier years there are generally fewer events recorded, most likely due to a lack of good records or collection mechanism. More recent years should be considered more complete. We are able to verify these facts based on below histogram.
+
+```{r}
+# plot the histogram
+hist(stormData$year, breaks = 60, xlab="Year",ylab="Events",col="gray",main="Events Per Year")
+```  
+
+As stated and verified in the histogram, data seems more complete in recent years. So, for our analysis we will focus only on those recent year data, starting 1994. Also, we will subset the columns to the ones needed for analysis. 
+
+```{r}
+storm <- stormData[stormData$year >= 1994, c("EVTYPE", "BGN_DATE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+```
+The year and column filtered dataset has `r dim(storm)[1]` rows and `r dim(storm)[2]` columns.
+
+#### 1. Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+
+##### The top 10 most offending severe weather event types for **fatalities**:
+
+```{r}
+fatality_summary <- aggregate(storm[, "FATALITIES"], by = list(storm$EVTYPE), FUN = "sum")
+names(fatality_summary) <- c("EventType", "FATALITIES")
+FatalityTop10 <- head(arrange(fatality_summary, fatality_summary$FATALITIES, decreasing=TRUE), 10)
+```
+
+##### The top 10 most offending severe weather event types causing  **injuries**:
+
+```{r}
+injury_summary <- aggregate(storm[, "INJURIES"], by = list(storm$EVTYPE), FUN = "sum")
+names(injury_summary) <- c("EventType", "INJURIES")
+InjuryTop10 <- head(arrange(injury_summary, injury_summary$INJURIES, decreasing=TRUE), 10)
+```
+
+#### 2.	Across the United States, which types of events have the greatest economic consequences?
+
+First we convert the **property damage** and **crop damage** data into comparable numerical forms. Their units are described in ([Storm Events: Record Layout](http://ire.org/media/uploads/files/datalibrary/samplefiles/Storm%20Events/layout08.doc)). 
+Both `PROPDMGEXP` and `CROPDMGEXP` columns have multipliers as: Hundred (H), Thousand (K), Million (M) and Billion (B).
+Any other values such as blanks get assigned to 1, effectively making the multiplier causes no change in the value.
+
+```{r}
+options(scipen = 999)
+storm$PROPDMGEXP_number <- sapply(storm$PROPDMGEXP,function(x) {switch(as.character(x),  "k" = 1000, "K" = 1000,
+                                                                "m" = 1000000, "M" = 1000000, 
+                                                                "B" = 1000000000, 1)})
+storm$PROPDMG_value <- storm$PROPDMG * storm$PROPDMGEXP_number
+
+storm$CROPDMGEXP_number <- sapply(storm$CROPDMGEXP,function(x) {switch(as.character(x),  "k" = 1000, "K" = 1000,
+                                                                "m" = 1000000, "M" = 1000000, 
+                                                                "B" = 1000000000, 1)})
+storm$CROPDMG_value <- storm$CROPDMG * storm$CROPDMGEXP_number
+```
+
+##### The top 10 most offending severe weather event types for **property damage**:
+
+```{r}
+pd_summary <- aggregate(storm[, "PROPDMG_value"], by = list(storm$EVTYPE), FUN = "sum")
+names(pd_summary) <- c("EventType", "PropertyDamage")
+PropertyDamageTop10 <- head(arrange(pd_summary, pd_summary$PropertyDamage, decreasing=TRUE), 10)
+```
+
+##### The top 10 most offending severe weather event types for **crop damage**:
+
+```{r}
+cd_summary <- aggregate(storm[, "CROPDMG_value"], by = list(storm$EVTYPE), FUN = "sum")
+names(cd_summary) <- c("EventType", "CropDamage")
+CropDamageTop10 <- head(arrange(cd_summary, cd_summary$CropDamage, decreasing=TRUE), 10)
+```
+
+### Results
+
+Regarding the impact on public health, we have got two sorted lists of severe weather events below by the number of people adversely affected.
+```{r}
+FatalityTop10
+InjuryTop10
+```
+
+Based on the above tabular data, we find that **excessive heat** and **tornado** caused most fatalities. **Tornato** was the leading cause of injuries in the United States between 1994 and 2011.
+
+Regarding the impact on economy, we have got two sorted lists f severe weather events below by the cost of damages.  
+
+```{r}
+PropertyDamageTop10
+CropDamageTop10
+```
+
+Based on the above tabular data, we find that **flood** and **hurricane/typhoon** caused most property damage. **Drought** and **flood** was the leading cause of most crop damage in the United States between 1994 and 2011.
+
+### Conclusion  
+From our current analysis, we see that **excessive heat** and **tornado** are the two leading events caused by severe weather that have adverse effect to population health, while **flood**, **drought**, and **hurricane/typhoon** seem to be the leading cause of economic losses in terms of crop and property damage.
+
