@@ -18,6 +18,7 @@ We skip re-downloading if the data file is already present in the working direct
 
 ```{r}
 echo = TRUE  # Make R code visible
+library(plyr)
 ```
 
 ```{r}
@@ -126,7 +127,7 @@ InjuryTop10
 
 Based on the above tabular data, we find that **excessive heat** and **tornado** caused most fatalities. **Tornato** was the leading cause of injuries in the United States between 1994 and 2011.
 
-Regarding the impact on economy, we have got two sorted lists f severe weather events below by the cost of damages.  
+Regarding the impact on economy, we have got two sorted lists of severe weather events below by the cost of damages.  
 
 ```{r}
 PropertyDamageTop10
@@ -136,5 +137,5 @@ CropDamageTop10
 Based on the above tabular data, we find that **flood** and **hurricane/typhoon** caused most property damage. **Drought** and **flood** was the leading cause of most crop damage in the United States between 1994 and 2011.
 
 ### Conclusion  
-From our current analysis, we see that **excessive heat** and **tornado** are the two leading events caused by severe weather that have adverse effect to population health, while **flood**, **drought**, and **hurricane/typhoon** seem to be the leading cause of economic losses in terms of crop and property damage.
+From our current analysis, we see that **excessive heat** and **tornado** are the two leading events caused by severe weather that have adverse effect on population health, while **flood**, **drought**, and **hurricane/typhoon** seem to be the leading causes of economic loss in terms of crop and property damage.
 
